@@ -2,14 +2,14 @@
   "name": "Web Push Test",
   "short_name": "WebPush",
   "icons": [{  
-    "src": "optlogo.gif",  
-    "sizes": "300x250",
+    "src": "logo.jpg",  
+    "sizes": "284x177",
     "type": "image/gif" 
   }],  
-  "start_url": "webpush.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000040",
-  "gcm_sender_id": "webpushtest-1244",
+  "gcm_sender_id": "803116934366",
   "gcm_user_visible_only": true
 }

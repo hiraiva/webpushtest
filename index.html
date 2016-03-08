@@ -1,0 +1,121 @@
+<html>
+<head>
+<link rel="manifest" href="manifest.json">
+<script type="text/javascript">
+var inlineApp = {
+  currentSubscription: null,
+  subscribeButton: null,
+  unsubscribeButton: null,
+  curlCommand: null,
+  init: function() {
+    inlineApp.subscribeButton = document.getElementById("subscribe");
+    inlineApp.unsubscribeButton = document.getElementById("unsubscribe");
+    inlineApp.curlCommand = document.getElementById("curlCommand");
+    inlineApp.subscribeButton.addEventListener("click", inlineApp.subscribe, false);
+    inlineApp.unsubscribeButton.addEventListener("click", inlineApp.unsubscribe, false);
+    if (inlineApp.isSupported()) {
+      navigator.serviceWorker.ready.then(inlineApp.serviceWorkerReady);
+      navigator.serviceWorker.register("serviceworker.js");
+    } else {
+      alert("Sorry, your browser is not supported.");
+    }
+  },
+  serviceWorkerReady: function(registration) {
+    console.log("------- registration -------");
+    console.log(registration);
+    if (registration && registration.pushManager) {
+      registration.pushManager.getSubscription().then(inlineApp.handleSubscription);
+    }
+  },
+  handleSubscription: function(subscription) {
+    console.log("------- subscription -------");
+    console.log(subscription);
+    inlineApp.currentSubscription = subscription;
+    if (inlineApp.isSubscribing()) {
+      inlineApp.subscribeButton.style.display = "none";
+      inlineApp.unsubscribeButton.style.display = "block";
+      inlineApp.curlCommand.innerHTML = '';
+      var curl = 'curl --header "Authorization: key=AIzaSyCvSTASH6lm6-JDnjGGGwhol9zOBOmIs4c" --header Content-Type:"application/json" "' + subscription.endpoint + '" -d ""';
+      inlineApp.curlCommand.appendChild(document.createTextNode(curl));
+      inlineApp.curlCommand.style.display = "block";
+    } else {
+      inlineApp.subscribeButton.style.display = "block";
+      inlineApp.unsubscribeButton.style.display = "none";
+      inlineApp.curlCommand.style.display = "none";
+    }
+  },
+  subscribe: function(event) {
+    console.log("------- subscribe -------");
+    console.log(inlineApp.currentSubscription);
+    if (inlineApp.isSubscribing() === false) {
+      Notification.requestPermission(function(permission) {
+        console.log("subscribe permission/", permission);
+        if (inlineApp.isPermissionDenied(permission) === false) {
+          inlineApp.requestPermission();
+        }
+      })
+    }
+  },
+  unsubscribe: function(event) {
+    console.log("------- unsubscribe -------");
+    console.log(inlineApp.currentSubscription);
+    if (inlineApp.isSubscribing()) {
+      inlineApp.currentSubscription.unsubscribe();
+      inlineApp.handleSubscription(null);
+    }
+  },
+  isSupported: function() {
+    return navigator && navigator.serviceWorker;
+  },
+  isSubscribing: function() {
+    return !!inlineApp.currentSubscription;
+  },
+  isPermissionDenied: function(input) {
+    var target = (input && input.permission) ? input.permission : input;
+    return target === "denied";
+  },
+  requestPermission: function() {
+    if (inlineApp.isSupported() === false) {
+      console.log("not supported on requestPermission");
+      return;
+    }
+    console.log("requestPermission | navigator.permissions/", navigator.permissions);
+    if (navigator && navigator.permissions) {
+      navigator.permissions.query({
+        name: "push",
+        userVisibleOnly: true
+      }).then(function (event) {
+        var state = event.state || event.status;
+        if (inlineApp.isPermissionDenied(state) === false) {
+          navigator.serviceWorker.ready.then(inlineApp.requestSubscription);
+        }
+      });
+    } else if (inlineApp.isPermissionDenied(Notification) === false) {
+      navigator.serviceWorker.ready.then(inlineApp.requestSubscription);
+    }
+  },
+  requestSubscription: function(registration) {
+    console.log("requestSubscription | registration/", registration);
+    if (registration && registration.pushManager) {
+      return registration.pushManager.subscribe({
+        userVisible: true, // for Chrome 42-44
+        userVisibleOnly: true
+      }).then(inlineApp.handleSubscription);
+    } else {
+      return null;
+    }
+  }
+};
+
+window.addEventListener("load", inlineApp.init, false);
+window.document.cookie = "imitation_uid_" + Math.random();
+</script>
+</head>
+<body>
+web push test is here.
+
+<button id="subscribe" style="display: none;">subscribe</button>
+<button id="unsubscribe" style="display: none;">unsubscribe</button>
+<pre id="curlCommand" style="display: none; margin-top: 3em;"></pre>
+</body>
+</html>
