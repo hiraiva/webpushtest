@@ -35,14 +35,32 @@ var inlineApp = {
       inlineApp.subscribeButton.style.display = "none";
       inlineApp.unsubscribeButton.style.display = "block";
       inlineApp.curlCommand.innerHTML = '';
-      var curl = 'curl --header "Authorization: key=AIzaSyCvSTASH6lm6-JDnjGGGwhol9zOBOmIs4c" --header Content-Type:"application/json" "' + subscription.endpoint + '" -d ""';
-      inlineApp.curlCommand.appendChild(document.createTextNode(curl));
+      inlineApp.curlCommand.appendChild(document.createTextNode(inlineApp.endpointToCurl(subscription.endpoint)));
       inlineApp.curlCommand.style.display = "block";
     } else {
       inlineApp.subscribeButton.style.display = "block";
       inlineApp.unsubscribeButton.style.display = "none";
       inlineApp.curlCommand.style.display = "none";
     }
+  },
+  endpointToCurl: function(endpoint) {
+    var keys = Object.keys(inlineApp.endpointHanders), ret = "";
+    for (var i = 0; i < keys.length; i++) {
+      if (new RegExp(keys[i]).test(endpoint)) {
+        ret = inlineApp.endpointHanders[keys[i]](endpoint);
+        break;
+      }
+    }
+    return ret;
+  },
+  endpointHanders: {
+    "android": function(endpoint) {
+      var parts = endpoint.split("/gcm/send/");
+      return 'curl --header "Authorization: key=AIzaSyCvSTASH6lm6-JDnjGGGwhol9zOBOmIs4c" --header Content-Type:"application/json" ' + parts[0] + '/gcm/send -d "{\\\"registration_ids\\\":[\\\"' + parts[1] + '\\\"]}"';
+    },
+    "mozilla": function(endpoint) {
+      return 'curl -v -X PUT "' + endpoint + '"';
+    },
   },
   subscribe: function(event) {
     console.log("------- subscribe -------");
